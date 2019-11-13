@@ -1,8 +1,6 @@
 //se importan las librerias necesarias para el funcionamineto de cloud functions de firebase
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { response } from 'express';
-import { request } from 'https';
 
 
 //se inicializa la libreria
@@ -78,6 +76,8 @@ export const addUser = functions.https.onRequest((request, response) => {
 });
 
 
+
+//funcion para poder ingresar nuevos equipos con sus caracaterisca necesaris
 export const addDispositivos = functions.https.onRequest((request, response) => {
 
         //datos necesarios para poder ingresar un nuevo dispositivo
@@ -86,7 +86,7 @@ export const addDispositivos = functions.https.onRequest((request, response) => 
         let name = request.body.name
         let time = request.body.time
 
-        //verficcamos si los parametros existen
+        //verificamos si los parametros existen
 
         if(avatar && modelo && name && name && time){
         
@@ -116,6 +116,7 @@ export const addDispositivos = functions.https.onRequest((request, response) => 
         })
 
         }else{
+                //enviamos una respuesta si los parametros no existen
                 const responseNull = {
                         "status": "error",
                         "message": "se requieren parametros necesarios"
