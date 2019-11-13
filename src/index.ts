@@ -1,6 +1,8 @@
 //se importan las librerias necesarias para el funcionamineto de cloud functions de firebase
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { response } from 'express';
+import { request } from 'https';
 
 
 //se inicializa la libreria
@@ -74,4 +76,52 @@ export const addUser = functions.https.onRequest((request, response) => {
         }
        
 });
+
+
+export const addDispositivos = functions.https.onRequest((request, response) => {
+
+        //datos necesarios para poder ingresar un nuevo dispositivo
+        let avatar = request.body.avatar
+        let modelo = request.body.modelo
+        let name = request.body.name
+        let time = request.body.time
+
+        //verficcamos si los parametros existen
+
+        if(avatar && modelo && name && name && time){
+        
+        //agreamos los datos en un objeto para posteriormente ingresar a la base de datos
+        const datosDispositivos = {
+                "avatar": avatar,
+                "modelo": modelo,
+                "name": name,
+                "time": time
+        }
+
+        //referencia para agragar a la base de datos
+        admin.database().ref('/App/Logic/dispositivos').push(datosDispositivos)
+        .then(() => {
+                //enviamos una respuesta al cliente que de se ingrsaron los datos correctamente
+                const messagecliente = {
+                        "status": "ok",
+                        "message": "se ingreso correctamente"
+                }
+                response.send(messagecliente);
+        })
+
+        //capturamos todos los errores posibles si no se ingresan los datos
+        .catch(error => {
+                console.log(error);
+                response.status(500).send("error fatal");
+        })
+
+        }else{
+                const responseNull = {
+                        "status": "error",
+                        "message": "se requieren parametros necesarios"
+                }
+                response.send(responseNull);
+        }
+
+})
 
