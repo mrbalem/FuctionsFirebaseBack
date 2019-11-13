@@ -3,7 +3,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 
-//se inicializa el aplicativo
+//se inicializa la libreria
 admin.initializeApp();
 
 
@@ -27,7 +27,7 @@ export const getjemploApifunction2 = functions.https.onRequest((request, respons
 // se exporta la funcion para obtener el token y el alias del usuario
 export const addUser = functions.https.onRequest((request, response) => {
 
-        // se capturan los datos de entra de rerquest. para posteriormente procesarlo
+        // se capturan los datos de entrada de request para posteriormente procesarlo.
         let alias = request.body.alias
         let token = request.body.token
 
@@ -44,13 +44,13 @@ export const addUser = functions.https.onRequest((request, response) => {
         
         /**  se accede a la referencia de la base de datos con ref. ejempl: /App/logic/User en esta referencia es 
          *   donde se agregaran los datos, cabe destacar que esta referencia es dinamico, cambiara segun  convenga.
-         *   existe dos metodos para acceder a la base de datos set() y push() la direncia es que push ingresa los
+         *   existe dos metodos para acceder a la base de datos set() y push() la diferencia es que push ingresa los
          *   datos con un identificador unico y no sobrescribe los datos, por otro lado set ingresa los datos sin un identificador
          *   si no existe lo crea y sobreescribe los datos.
          *   con la funcion then() se verifica si los datos fueron ingresados correctamente
-         *   la funcion caht() detecta el error o la incidencia del por que no ingresa dicho dato.           
+         *   la funcion catch() detecta el error del por que no ingresa dicho dato.           
         **/
-       
+
         admin.database().ref('/App/Logic/Users/' + alias + '1').set(user)
         .then(() => {
                 const data = {
