@@ -149,9 +149,8 @@ export const getDispositivos = functions.https.onRequest((request, response) => 
                                         const changeDispositivos = admin.database().ref('/App/Logic/dispositivos')
                                         changeDispositivos.on('value', (snap) => {
                                                 if (snap) {
-
-                                                        //parseamos los dispositovos
-                                                        const dispositivos = Object.keys(snap.val() || {} ).map(key => snap.val()[key]) 
+                                                        //parseamos la data de los dispositovos
+                                                        const dispositivos = Object.keys(snap.val() || {}).map(key => snap.val()[key])
 
                                                         //enviamos un objeto con los dispositivos requeridos
                                                         const data = {
@@ -188,6 +187,104 @@ export const getDispositivos = functions.https.onRequest((request, response) => 
 
                 // enviamos la respuesta
                 response.send(tokenNull)
+        }
+})
+
+export const setAdmin = functions.https.onRequest((request, response) => {
+
+        //capturamos los datos necesarios de la solicitud
+        const adminUsers = request.body.users;
+        const adminClave = request.body.clave;
+        const token = request.body.token;
+
+        if (adminUsers && adminClave && token) {
+
+                //guardamos los datos en un objeto 
+                const setDatos = {
+                        "usuario": adminUsers,
+                        "clave": adminClave,
+                        "token": token
+                }
+
+                admin.database().ref('/App/Logic/Admin/' + token).set(setDatos)
+                        .then(() => {
+                                //enviamos un mensaje si los datos son almacenados correctamente
+                                const getMessage = {
+                                        "status": "ok",
+                                        "message": "se registro con éxito"
+                                }
+                                response.send(getMessage)
+                        })
+
+                        .catch(error => {
+                                console.log("error", error)
+                                response.status(500).send("error fatal");
+                        })
+        } else {
+                //enviamos un objeto si los parametros necesarios no existen  
+                const respuesta = {
+                        "status": "error",
+                        "message": "faltan campos necesarios"
+                }
+
+                response.send(respuesta)
+        }
+
+
+});
+
+export const loginAdmin = functions.https.onRequest((request, response) => {
+        //capturamos los datos del request
+        const adminUsers = request.body.usuario
+        const adminClave = request.body.clave
+        const adminToken = request.body.token
+
+        if (adminClave && adminUsers && adminToken) {
+
+                 //obtenemos los datos del admin
+                 const  getUser =  admin.database().ref('/App/Logic/'+adminToken+'/usuario')
+                 getUser.once('value', snapshop => {
+
+                            //obtenemos el usario del admin
+                            const adminusuario = snapshop.val();
+
+                            //consultamos la contraseña del admin
+                            const getClave = admin.database().ref('/App/Logic/'+adminToken+'/clave')
+                            getClave.once('value', snap => {
+                                        //capturamos la clave de admin
+                                        const adminclave = snapshop.val()
+                                        if(adminusuario === adminUsers && adminClave === adminclave){
+                                                //si la clave y usario son correctos enviaremos una respuesta
+
+                                                const getAdmin = {
+                                                        "status": "ok",
+                                                        "message": "ingreso correctamente"
+                                                }
+
+                                                response.send(getAdmin)
+                                        }else{
+                                                //enviamos una respuesta si los datos son incorrectos
+                                                const geterror = {
+                                                        "status": "error",
+                                                        "message": "datos incorrextos"
+                                                }
+                                                response.send(geterror)
+                                        }
+
+                            })
+                           
+                })    
+
+
+        } else {
+                //enciamos una respuesta si admin user no existe
+                const messagereponse = {
+                        "status": "error",
+                        "message": "faltan campos"
+                }
+
+                response.send(messagereponse)
+
         }
 })
 
