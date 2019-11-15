@@ -241,39 +241,42 @@ export const loginAdmin = functions.https.onRequest((request, response) => {
 
         if (adminClave && adminUsers && adminToken) {
 
-                 //obtenemos los datos del admin
-                 const  getUser =  admin.database().ref('/App/Logic/'+adminToken+'/usuario')
-                 getUser.once('value', snapshop => {
+                //obtenemos los datos del admin
+                const getUser = admin.database().ref('/App/Logic/Admin/' + adminToken + '/usuario')
+                getUser.on('value', snapshop => {
 
-                            //obtenemos el usario del admin
-                            const adminusuario = snapshop.val();
-
-                            //consultamos la contraseña del admin
-                            const getClave = admin.database().ref('/App/Logic/'+adminToken+'/clave')
-                            getClave.once('value', snap => {
+                        //obtenemos el usario del admin
+                        
+                                const getadminusuario = snapshop!.val();
+                                //consultamos la contraseña del admin
+                                const getClave = admin.database().ref('/App/Logic/Admin/' + adminToken + '/clave')
+                                getClave.on('value', snap => {
                                         //capturamos la clave de admin
-                                        const adminclave = snapshop.val()
-                                        if(adminusuario === adminUsers && adminClave === adminclave){
-                                                //si la clave y usario son correctos enviaremos una respuesta
+                                       
+                                                const getadminclave = snap!.val()
+                                                if (getadminusuario === adminUsers && adminClave === getadminclave) {
+                                                        //si la clave y usario son correctos enviaremos una respuesta
 
-                                                const getAdmin = {
-                                                        "status": "ok",
-                                                        "message": "ingreso correctamente"
+                                                        const getAdmin = {
+                                                                "status": "ok",
+                                                                "message": "ingreso correctamente"
+                                                        }
+
+                                                        response.send(getAdmin)
+                                                } else {
+                                                        //enviamos una respuesta si los datos son incorrectos
+                                                        const geterror = {
+                                                                "status": "error",
+                                                                "message": "datos incorrectos"
+                                                        }
+                                                        response.send(geterror)
                                                 }
+                                        
 
-                                                response.send(getAdmin)
-                                        }else{
-                                                //enviamos una respuesta si los datos son incorrectos
-                                                const geterror = {
-                                                        "status": "error",
-                                                        "message": "datos incorrextos"
-                                                }
-                                                response.send(geterror)
-                                        }
+                                })
+                        
 
-                            })
-                           
-                })    
+                })
 
 
         } else {
