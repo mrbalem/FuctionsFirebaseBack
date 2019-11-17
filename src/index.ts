@@ -5,7 +5,14 @@ import * as admin from 'firebase-admin';
 //se inicializa la libreria
 admin.initializeApp();
 
-
+const getStatus = (status: any, message: any, data: any) => {
+        const object = {
+                "status": status,
+                "message": message,
+                "data": data === null ? "no hay datos" : data
+        }
+        return object
+}
 
 export const getjemploApifunction2 = functions.https.onRequest((request, response) => {
         admin.firestore().doc('mobile-trash/dispositivos').get()
@@ -88,7 +95,6 @@ export const addDispositivos = functions.https.onRequest((request, response) => 
         //verificamos si los parametros existen
 
         if (avatar && modelo && name && name && time) {
-
                 //agreamos los datos en un objeto para posteriormente ingresar a la base de datos
                 const datosDispositivos = {
                         "avatar": avatar,
@@ -101,11 +107,7 @@ export const addDispositivos = functions.https.onRequest((request, response) => 
                 admin.database().ref('/App/Logic/dispositivos').push(datosDispositivos)
                         .then(() => {
                                 //enviamos una respuesta al cliente que de se ingrsaron los datos correctamente
-                                const messagecliente = {
-                                        "status": "ok",
-                                        "message": "se ingreso correctamente"
-                                }
-                                response.send(messagecliente);
+                                response.send(getStatus("ok","se ingreso correctamente", null));
                         })
 
                         //capturamos todos los errores posibles si no se ingresan los datos
@@ -114,82 +116,45 @@ export const addDispositivos = functions.https.onRequest((request, response) => 
                                 response.status(500).send("error fatal");
                         })
 
-        } else {
+                return
+
+        } 
                 //enviamos una respuesta si los parametros no existen
-                const responseNull = {
-                        "status": "error",
-                        "message": "se requieren parametros necesarios"
-                }
-                response.send(responseNull);
-        }
+                response.send(getStatus("error", "se requieren parametros necesarios", null));
 
 })
 
 
 //funcion para poder obtener los dispositivos
-export const getDispositivos = functions.https.onRequest((request, response) => {
+export const getDispositivos = functions.https.onRequest( async (request, response) => {
 
         //se requiere el token para poder verificar los dispositivos
         const token = request.body.token;
-
         //verificamos si el parametro token existe
         if (token) {
                 //obtenes la direccion del token
-                const verificandotoken = admin.database().ref('/App/Logic/Users/' + token + '/token')
-                verificandotoken.on('value', (snapshot) => {
-                        //verficamos si la referencia existe y no esta nula
-                        if (snapshot) {
+                const verificandotoken =  await admin.database().ref('/App/Logic/Users/' + token + '/token').once('value')
 
-                                //obtenemos el token  de la basse de datos
-                                const tokenDatabase = snapshot.val();
+                //verrificamos el estado del token
+                if(verificandotoken.val() === null) {response.send(getStatus("error", "token no existe", null)); return }
 
-                                //comparamos el token del cliente con la base de datos
-                                if (token === tokenDatabase) {
-                                        //obtenemos los dispositvos
-                                        const changeDispositivos = admin.database().ref('/App/Logic/dispositivos')
-                                        changeDispositivos.on('value', (snap) => {
-                                                if (snap) {
-                                                        //parseamos la data de los dispositovos
-                                                        const dispositivos = Object.keys(snap.val() || {}).map(key => snap.val()[key])
-
-                                                        //enviamos un objeto con los dispositivos requeridos
-                                                        const data = {
-                                                                "status": "ok",
-                                                                "message": "se obtuve con exito los dispositivos",
-                                                                "data": dispositivos
-                                                        }
-
-                                                        response.send(data)
-                                                }
-                                        })
-
-                                } else {
-                                        //enviamos un objetos si los tokens no son iguales
-                                        const data = {
-                                                "status": "error",
-                                                "message": "token invalido"
-                                        }
-                                        response.send(data)
-                                }
-
-                        }
-
-                })
-
-
-
-        } else {
-                // si el parametro token no existe mandamos una respuesta en un objeto
-                const tokenNull = {
-                        "status": "error",
-                        "message": "el token es necesario"
+                 //comparamos el token del cliente con la base de datos
+                if(token === verificandotoken.val()){
+                        //obtenemos los dispositivos
+                        const getDispo = await admin.database().ref('/App/Logic/dispositivos').once('value')
+                        //pareamos la data
+                        const parseDispositivos = Object.keys(getDispo.val() || {}).map(key => getDispo.val()[key])
+                        //enviamos la informacion
+                        response.send(getStatus("ok", "se obtuve con exito los dispositivos", parseDispositivos))
                 }
 
-                // enviamos la respuesta
-                response.send(tokenNull)
-        }
+                return
+        } 
+                // si el parametro token no existe mandamos una respuesta en un objeto
+                response.send(getStatus("error","el token es necesario",null))  
 })
 
+//registro del administrador
 export const setAdmin = functions.https.onRequest((request, response) => {
 
         //capturamos los datos necesarios de la solicitud
@@ -209,85 +174,48 @@ export const setAdmin = functions.https.onRequest((request, response) => {
                 admin.database().ref('/App/Logic/Admin/' + token).set(setDatos)
                         .then(() => {
                                 //enviamos un mensaje si los datos son almacenados correctamente
-                                const getMessage = {
-                                        "status": "ok",
-                                        "message": "se registro con éxito"
-                                }
-                                response.send(getMessage)
+                                response.send(getStatus("ok","se registro con éxito",null))
                         })
-
                         .catch(error => {
                                 console.log("error", error)
                                 response.status(500).send("error fatal");
                         })
-        } else {
+                
+                return         
+        } 
                 //enviamos un objeto si los parametros necesarios no existen  
-                const respuesta = {
-                        "status": "error",
-                        "message": "faltan campos necesarios"
-                }
-
-                response.send(respuesta)
-        }
-
-
+                response.send(getStatus("error","faltan campos necesarios", null))
 });
 
-export const loginAdmin = functions.https.onRequest((request, response) => {
+export const loginAdmin = functions.https.onRequest(async (request, response) => {
         //capturamos los datos del request
         const adminUsers = request.body.usuario
         const adminClave = request.body.clave
         const adminToken = request.body.token
 
         if (adminClave && adminUsers && adminToken) {
+                try {
+                        //obtenemos el usuario del admin        
+                        const getUser = await admin.database().ref('/App/Logic/Admin/' + adminToken + '/usuario').once('value');
+                        //retornamos un mensage si el usuario no existe
+                        if (getUser.val() === null) { response.send({ "status": "error", "message": "Usuario incorrecto!." }); return }
+                        //obtenemos la contraseña del admin
+                        const getClave = await admin.database().ref('/App/Logic/Admin/' + adminToken + '/clave').once('value');
 
-                //obtenemos los datos del admin
-                const getUser = admin.database().ref('/App/Logic/Admin/' + adminToken + '/usuario')
-                getUser.on('value', snapshop => {
+                        if (getUser.val() === adminUsers && adminClave === getClave.val()) {
+                                //si la clave y usario son correctos enviaremos una respuesta
+                                response.send(getStatus("ok", "ingreso correctamente", null))
+                        } else {
+                                response.send(getStatus("error", "contraseña o clave incorrecto", null))
+                        }
 
-                        //obtenemos el usario del admin
-                        
-                                const getadminusuario = snapshop!.val();
-                                //consultamos la contraseña del admin
-                                const getClave = admin.database().ref('/App/Logic/Admin/' + adminToken + '/clave')
-                                getClave.on('value', snap => {
-                                        //capturamos la clave de admin
-                                       
-                                                const getadminclave = snap!.val()
-                                                if (getadminusuario === adminUsers && adminClave === getadminclave) {
-                                                        //si la clave y usario son correctos enviaremos una respuesta
-
-                                                        const getAdmin = {
-                                                                "status": "ok",
-                                                                "message": "ingreso correctamente"
-                                                        }
-
-                                                        response.send(getAdmin)
-                                                } else {
-                                                        //enviamos una respuesta si los datos son incorrectos
-                                                        const geterror = {
-                                                                "status": "error",
-                                                                "message": "datos incorrectos"
-                                                        }
-                                                        response.send(geterror)
-                                                }
-                                        
-
-                                })
-                        
-
-                })
-
-
-        } else {
-                //enciamos una respuesta si admin user no existe
-                const messagereponse = {
-                        "status": "error",
-                        "message": "faltan campos"
+                } catch (error) {
+                        console.log("error", error)
+                        response.status(500).send("error fatal");
                 }
-
-                response.send(messagereponse)
-
+                return
         }
-})
 
+        response.send(getStatus("error", "faltan campos", null));
+
+})
