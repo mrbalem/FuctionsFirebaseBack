@@ -205,7 +205,6 @@ export const loginAdmin = functions.https.onRequest(async (request, response) =>
 
 
 // funcion para poder ingresar los depositos 
-
 export const addDepositos = functions.https.onRequest(async (request, response) => {
 
 
