@@ -1,7 +1,6 @@
 //se importan las librerias necesarias para el funcionamineto de cloud functions de firebase
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { response } from 'express';
 
 //se inicializa la libreria
 admin.initializeApp();
@@ -32,7 +31,7 @@ export const getjemploApifunction2 = functions.https.onRequest((request, respons
 
 
 // se exporta la funcion para obtener el token y el alias del usuario
-export const addUser = functions.https.onRequest((request, response) => {
+export const addUser = functions.https.onRequest( async (request, response) => {
 
         // se capturan los datos de entrada de request para posteriormente procesarlo.
         const alias = request.body.alias;
@@ -48,7 +47,6 @@ export const addUser = functions.https.onRequest((request, response) => {
                         "token": token
                 }
 
-
                 /**  se accede a la referencia de la base de datos con ref. ejempl: /App/logic/User en esta referencia es 
                  *   donde se agregaran los datos, cabe destacar que esta referencia es dinamico, cambiara segun  convenga.
                  *   existe dos metodos para acceder a la base de datos set() y push() la diferencia es que push ingresa los
@@ -57,35 +55,23 @@ export const addUser = functions.https.onRequest((request, response) => {
                  *   con la funcion then() se verifica si los datos fueron ingresados correctamente
                  *   la funcion catch() detecta el error del por que no ingresa dicho dato.           
                 **/
-
-                admin.database().ref('/App/Logic/Users/' + token).set(user)
-                        .then(() => {
-                                const data = {
-                                        "status": "ok",
-                                        "message": "ingreso con exito el usuario"
-                                }
-                                response.send(data)
-                        })
-                        .catch(error => {
-                                console.log(error)
-                                response.status(500).send("error");
-                        })
-
-        } else {
-                const camposNulos = {
-                        "status": "error",
-                        "message": "faltan campos necesarios"
+                try {
+                        await admin.database().ref('/App/Logic/Users/' + token).set(user)        
+                        response.send(getStatus("ok", "ingreso con exito el usuario", null))
+                } catch (error) {
+                        console.log(error)
+                        response.send(getStatus("error", "no se ingreso el usuario", null))
                 }
 
-                response.send(camposNulos)
+        } else {
+                response.send(getStatus("error", "faltan campos necesarios", null))
         }
 
 });
 
 
-
 //funcion para poder ingresar nuevos equipos con sus caracaterisca necesaris
-export const addDispositivos = functions.https.onRequest((request, response) => {
+export const addDispositivos = functions.https.onRequest( async (request, response) => {
 
         //datos necesarios para poder ingresar un nuevo dispositivo
         const avatar = request.body.avatar;
@@ -105,23 +91,19 @@ export const addDispositivos = functions.https.onRequest((request, response) => 
                 }
 
                 //referencia para agragar a la base de datos
-                admin.database().ref('/App/Logic/dispositivos').push(datosDispositivos)
-                        .then(() => {
-                                //enviamos una respuesta al cliente que de se ingrsaron los datos correctamente
-                                response.send(getStatus("ok", "se ingreso correctamente", null));
-                        })
-
-                        //capturamos todos los errores posibles si no se ingresan los datos
-                        .catch(error => {
-                                console.log(error);
-                                response.status(500).send("error fatal");
-                        })
+                try {
+                        await admin.database().ref('/App/Logic/dispositivos').push(datosDispositivos)
+                        response.send(getStatus("ok", "se ingreso correctamente", null));
+                } catch (error) {
+                        console.log(error);
+                        response.status(500).send("error fatal");
+                }
 
                 return
 
         }
-        //enviamos una respuesta si los parametros no existen
-        response.send(getStatus("error", "se requieren parametros necesarios", null));
+//enviamos una respuesta si los parametros no existen
+response.send(getStatus("error", "se requieren parametros necesarios", null));
 
 })
 
@@ -156,7 +138,7 @@ export const getDispositivos = functions.https.onRequest(async (request, respons
 })
 
 //registro del administrador
-export const setAdmin = functions.https.onRequest( async (request, response) => {
+export const setAdmin = functions.https.onRequest(async (request, response) => {
 
         //capturamos los datos necesarios de la solicitud
         const adminUsers = request.body.users;
@@ -181,9 +163,9 @@ export const setAdmin = functions.https.onRequest( async (request, response) => 
                         response.status(500).send("error fatal");
                 }
 
-                return         
+                return
         }
-//enviamos un objeto si los parametros necesarios no existen  
+        //enviamos un objeto si los parametros necesarios no existen  
         response.send(getStatus("error", "faltan campos necesarios", null))
 });
 
