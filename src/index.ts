@@ -1,6 +1,7 @@
 //se importan las librerias necesarias para el funcionamineto de cloud functions de firebase
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { response } from 'express';
 
 //se inicializa la libreria
 admin.initializeApp();
@@ -107,7 +108,7 @@ export const addDispositivos = functions.https.onRequest((request, response) => 
                 admin.database().ref('/App/Logic/dispositivos').push(datosDispositivos)
                         .then(() => {
                                 //enviamos una respuesta al cliente que de se ingrsaron los datos correctamente
-                                response.send(getStatus("ok","se ingreso correctamente", null));
+                                response.send(getStatus("ok", "se ingreso correctamente", null));
                         })
 
                         //capturamos todos los errores posibles si no se ingresan los datos
@@ -118,28 +119,28 @@ export const addDispositivos = functions.https.onRequest((request, response) => 
 
                 return
 
-        } 
-                //enviamos una respuesta si los parametros no existen
-                response.send(getStatus("error", "se requieren parametros necesarios", null));
+        }
+        //enviamos una respuesta si los parametros no existen
+        response.send(getStatus("error", "se requieren parametros necesarios", null));
 
 })
 
 
 //funcion para poder obtener los dispositivos
-export const getDispositivos = functions.https.onRequest( async (request, response) => {
+export const getDispositivos = functions.https.onRequest(async (request, response) => {
 
         //se requiere el token para poder verificar los dispositivos
         const token = request.body.token;
         //verificamos si el parametro token existe
         if (token) {
                 //obtenes la direccion del token
-                const verificandotoken =  await admin.database().ref('/App/Logic/Users/' + token + '/token').once('value')
+                const verificandotoken = await admin.database().ref('/App/Logic/Users/' + token + '/token').once('value')
 
                 //verrificamos el estado del token
-                if(verificandotoken.val() === null) {response.send(getStatus("error", "token no existe", null)); return }
+                if (verificandotoken.val() === null) { response.send(getStatus("error", "token no existe", null)); return }
 
-                 //comparamos el token del cliente con la base de datos
-                if(token === verificandotoken.val()){
+                //comparamos el token del cliente con la base de datos
+                if (token === verificandotoken.val()) {
                         //obtenemos los dispositivos
                         const getDispo = await admin.database().ref('/App/Logic/dispositivos').once('value')
                         //pareamos la data
@@ -149,13 +150,13 @@ export const getDispositivos = functions.https.onRequest( async (request, respon
                 }
 
                 return
-        } 
-                // si el parametro token no existe mandamos una respuesta en un objeto
-                response.send(getStatus("error","el token es necesario",null))  
+        }
+        // si el parametro token no existe mandamos una respuesta en un objeto
+        response.send(getStatus("error", "el token es necesario", null))
 })
 
 //registro del administrador
-export const setAdmin = functions.https.onRequest((request, response) => {
+export const setAdmin = functions.https.onRequest( async (request, response) => {
 
         //capturamos los datos necesarios de la solicitud
         const adminUsers = request.body.users;
@@ -169,38 +170,37 @@ export const setAdmin = functions.https.onRequest((request, response) => {
                         "usuario": adminUsers,
                         "clave": adminClave,
                         "token": token
+
                 }
 
-                admin.database().ref('/App/Logic/Admin/' + token).set(setDatos)
-                        .then(() => {
-                                //enviamos un mensaje si los datos son almacenados correctamente
-                                response.send(getStatus("ok","se registro con éxito",null))
-                        })
-                        .catch(error => {
-                                console.log("error", error)
-                                response.status(500).send("error fatal");
-                        })
-                
+                try {
+                        await admin.database().ref('/App/Logic/Admin/' + 20 + adminUsers + 20).set(setDatos)
+                        response.send(getStatus("ok", "se registro con éxito", null))
+                } catch (error) {
+                        console.log("error", error)
+                        response.status(500).send("error fatal");
+                }
+
                 return         
-        } 
-                //enviamos un objeto si los parametros necesarios no existen  
-                response.send(getStatus("error","faltan campos necesarios", null))
+        }
+//enviamos un objeto si los parametros necesarios no existen  
+        response.send(getStatus("error", "faltan campos necesarios", null))
 });
 
 export const loginAdmin = functions.https.onRequest(async (request, response) => {
         //capturamos los datos del request
         const adminUsers = request.body.usuario
         const adminClave = request.body.clave
-        const adminToken = request.body.token
 
-        if (adminClave && adminUsers && adminToken) {
+
+        if (adminClave && adminUsers) {
                 try {
                         //obtenemos el usuario del admin        
-                        const getUser = await admin.database().ref('/App/Logic/Admin/' + adminToken + '/usuario').once('value');
+                        const getUser = await admin.database().ref('/App/Logic/Admin/' + 20 + adminUsers + 20 + '/usuario').once('value');
                         //retornamos un mensage si el usuario no existe
                         if (getUser.val() === null) { response.send({ "status": "error", "message": "Usuario incorrecto!." }); return }
                         //obtenemos la contraseña del admin
-                        const getClave = await admin.database().ref('/App/Logic/Admin/' + adminToken + '/clave').once('value');
+                        const getClave = await admin.database().ref('/App/Logic/Admin/' + 20 + adminUsers + 20 + '/clave').once('value');
 
                         if (getUser.val() === adminUsers && adminClave === getClave.val()) {
                                 //si la clave y usario son correctos enviaremos una respuesta
@@ -217,5 +217,55 @@ export const loginAdmin = functions.https.onRequest(async (request, response) =>
         }
 
         response.send(getStatus("error", "faltan campos", null));
+
+})
+
+
+
+// funcion para poder ingresar los depositos 
+
+export const addDepositos = functions.https.onRequest(async (request, response) => {
+
+
+        const nameDeposito = request.body.name //nombre del deposito
+        const direccDeposito = request.body.direccion //direccion del deposito
+        const latitudDeposito = request.body.latitud //latitud del deposito
+        const longitudDeposito = request.body.longitud // longitud del deposito
+
+        if (!nameDeposito) {
+                //si el nombre del dispositivo no existe se le envia un mensaje
+                response.send(getStatus("error", "se requiere el nombre del deposito", null));
+                return
+        }
+
+        if (!direccDeposito) {
+                //su la direccion del dispositivo no existe se le envia una respuesta
+                response.send(getStatus("error", "se requiere la direccion del deposito", null));
+                return
+        }
+
+        if (!latitudDeposito && !longitudDeposito) {
+                //si la laitud y longitud no existe se le envair una respuesta
+                !latitudDeposito ? response.send(getStatus("error", "se requiere la latitud del deposito", null)) : response.send(getStatus("error", "se requier la latitud del deposito", null))
+                return
+        }
+
+
+        //agregamos los parametros recividos en un objeto
+        const data = {
+                "name": nameDeposito,
+                "direccion": direccDeposito,
+                "latitud": latitudDeposito,
+                "longitud": longitudDeposito
+        }
+
+        //funcion para ingresar los depositos en la base de datos
+        try {
+                await admin.database().ref('App/Logic/Depositos').push(data)
+                response.send(getStatus("ok", "se ingreso con exito", null))
+        } catch (error) {
+                console.log(error)
+                response.send(getStatus("error", "ocurrio un error inesperado", null))
+        }
 
 })
