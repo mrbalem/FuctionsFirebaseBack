@@ -250,3 +250,53 @@ export const addDepositos = functions.https.onRequest(async (request, response) 
         }
 
 })
+
+export const AddReportes = functions.https.onRequest( async (request, response)=>{
+                //capturamos los parametros necesarios
+                const alias = request.body.alias
+                const descripcion = request.body.descripcion
+                const fecha = request.body.descripcion
+
+                if(!alias){
+                      response.send(getStatus("error", "alias es necesario", null))  
+                      return
+                }
+
+                if(!descripcion || !fecha){
+                      !descripcion ? response.send(getStatus("error", "descripcion es necesario", null)) : response.send(getStatus("error", "fecha es necesario", null))  
+                      return
+                }
+
+                try {   
+                        const data = {
+                                "alias": alias,
+                                "descripcion": descripcion,
+                                "fecha": fecha
+                        }
+                        await admin.database().ref('App/Logic/reportes').push(data)
+                        response.send(getStatus("ok", "se envio con exito los reportes", null))
+
+                } catch (error) {
+                        console.log(error)
+                        response.send(getStatus("error", "ocurrio un error en el ingreso del reporte", null))
+                }
+
+})
+
+export const getReportes = functions.https.onRequest( async (request, response) => {
+        
+        try {
+                const data = await admin.database().ref('App/Logic/reportes').once('value')
+                if(data.val() != null){
+                        const parseReportes = Object.keys(data.val() || {}).map(key => data.val()[key])
+                        response.send(getStatus("ok", "se obtuvo con exito los reportes", parseReportes))
+                        return
+                }
+                response.send(getStatus("error", "no existe los reportes", null))
+        } catch (error) {
+              console.log(error)
+              response.send(getStatus("error", "ocurrio un error", null))  
+        }
+
+
+})
