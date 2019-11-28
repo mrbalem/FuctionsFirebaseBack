@@ -237,7 +237,7 @@ export const addDepositos = functions.https.onRequest(async (request, response) 
                 "name": nameDeposito,
                 "direccion": direccDeposito,
                 "latitud": latitudDeposito,
-                "longitud": longitudDeposito
+                "longitud": longitudDeposito,
         }
 
         //funcion para ingresar los depositos en la base de datos
@@ -271,11 +271,11 @@ export const AddReportes = functions.https.onRequest( async (request, response)=
                         const data = {
                                 "alias": alias,
                                 "descripcion": descripcion,
-                                "fecha": fecha
+                                "fecha": fecha,
+                                "status": "1"
                         }
                         await admin.database().ref('App/Logic/reportes').push(data)
                         response.send(getStatus("ok", "se envio con exito los reportes", null))
-
                 } catch (error) {
                         console.log(error)
                         response.send(getStatus("error", "ocurrio un error en el ingreso del reporte", null))
@@ -286,7 +286,7 @@ export const AddReportes = functions.https.onRequest( async (request, response)=
 export const getReportes = functions.https.onRequest( async (request, response) => {
         
         try {
-                const data = await admin.database().ref('App/Logic/reportes').once('value')
+                const data = await admin.database().ref('App/Logic/reportes').orderByChild('status').equalTo("1").once('value')
                 if(data.val() != null){
                         const parseReportes = Object.keys(data.val() || {}).map(key => data.val()[key])
                         response.send(getStatus("ok", "se obtuvo con exito los reportes", parseReportes))
@@ -299,4 +299,40 @@ export const getReportes = functions.https.onRequest( async (request, response) 
         }
 
 
+})
+
+//funcion para modificar el estado del reporte
+
+export const setStatus = functions.https.onRequest( async (request, response)=> {
+
+        const alias = request.body.alias
+        const status = request.body.status
+        
+        if(!status || !alias){
+               !status ? response.send(getStatus("error", "status es necesario", null)) : response.send(getStatus("error", "alias es necesario", null))
+                return
+        }
+
+        try {
+                let reporte:any = []
+                const id = await admin.database().ref('App/Logic/reportes').orderByChild("alias").equalTo(alias).once('value')
+                if(id){
+                        id.forEach(snap => {
+                                //guardamos el key en una array
+                                reporte.push(snap.key)
+                                return true
+                        })     
+                }
+
+                if(reporte.length === 0){
+                        response.send(getStatus("error", "error actualizando el estado", null))
+                        return
+                }
+                await admin.database().ref('App/Logic/reportes/'+reporte[0]).update({status: "0"})
+                response.send(getStatus("ok","se actualizo con exito", null))             
+               // await admin.database().ref('')
+                
+        } catch (error) {
+                console.log(error)
+        }
 })
