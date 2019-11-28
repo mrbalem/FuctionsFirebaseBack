@@ -292,7 +292,7 @@ export const getReportes = functions.https.onRequest( async (request, response) 
                         response.send(getStatus("ok", "se obtuvo con exito los reportes", parseReportes))
                         return
                 }
-                response.send(getStatus("error", "no existe los reportes", null))
+                response.send(getStatus("error", "No hay reportes", null))
         } catch (error) {
               console.log(error)
               response.send(getStatus("error", "ocurrio un error", null))  
@@ -325,10 +325,10 @@ export const setStatus = functions.https.onRequest( async (request, response)=> 
                 }
 
                 if(reporte.length === 0){
-                        response.send(getStatus("error", "error actualizando el estado", null))
+                        response.send(getStatus("error", "No se actualizo el estado", null))
                         return
                 }
-                await admin.database().ref('App/Logic/reportes/'+reporte[0]).update({status: "0"})
+                await admin.database().ref('App/Logic/reportes/'+reporte[0]).update({status: status})
                 response.send(getStatus("ok","se actualizo con exito", null))             
                // await admin.database().ref('')
                 
