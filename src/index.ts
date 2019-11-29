@@ -1,6 +1,8 @@
 //se importan las librerias necesarias para el funcionamineto de cloud functions de firebase
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { request } from 'http';
+import { response } from 'express';
 
 //se inicializa la libreria
 admin.initializeApp();
@@ -335,4 +337,21 @@ export const setStatus = functions.https.onRequest( async (request, response)=> 
         } catch (error) {
                 console.log(error)
         }
+})
+
+export const getDespositos = functions.https.onRequest( async (request, response) => {
+
+                try {
+                        const data = await admin.database().ref('App/Logic/Depositos').once('value')
+                        if(data.val()){
+                                const parseDepositos = Object.keys(data.val() || {}).map(key => data.val()[key])
+                                response.send(getStatus("ok", "se obtuvo con exito los depositos", parseDepositos))
+                                return
+                        }                        
+                        response.send(getStatus("ok", "ocurrio un error en la consulta", null))
+                        
+                } catch (error) {
+                        console.log(error)
+                        response.send(getStatus("error", "error inesperado", null))
+                }
 })
