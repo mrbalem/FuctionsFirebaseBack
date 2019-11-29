@@ -1,8 +1,6 @@
 //se importan las librerias necesarias para el funcionamineto de cloud functions de firebase
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { request } from 'http';
-import { response } from 'express';
 
 //se inicializa la libreria
 admin.initializeApp();
